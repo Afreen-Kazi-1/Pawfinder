@@ -45,6 +45,9 @@ class MockLogoutAuthRepository implements AuthRepository {
 void main() {
   group('Logout Flow Tests', () {
     testWidgets('Triggers confirmation dialog and logs out on confirm', (WidgetTester tester) async {
+    // Ensure the Sign Out button is within the visible viewport
+    tester.binding.window.physicalSizeTestValue = const Size(1080, 1920);
+    tester.binding.window.devicePixelRatioTestValue = 1.0;
       final mockRepo = MockLogoutAuthRepository();
 
       await tester.pumpWidget(
