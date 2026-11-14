@@ -1,14 +1,75 @@
 import uuid
-from typing import List
-from fastapi import APIRouter, Depends, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
-from app.schemas.match import MatchRunResponse, MatchResponse
+from app.schemas.match import (
+    MatchRunResponse,
+    MatchResponse,
+    MatchListResponse,
+    MatchStatusUpdate,
+)
 from app.services.match_service import MatchService
 
 router = APIRouter()
+
+
+@router.get(
+    "",
+    response_model=MatchListResponse,
+    summary="Get matches for the authenticated user's reports",
+)
+def list_user_matches(
+    status: Optional[str] = Query(None, description="Filter by status: Suggested, Relevant, Dismissed, Resolved"),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieves all matches for reports submitted by the logged-in user.
+    Includes original lost and found reports, match scores, and explainable reasons.
+    """
+    service = MatchService(db)
+    items, total = service.get_user_matches(
+        current_user=current_user,
+        status_filter=status,
+        page=page,
+        size=size,
+    )
+    return MatchListResponse(items=items, total=total, page=page, size=size)
+
+
+@router.get(
+    "/{id}",
+    response_model=MatchResponse,
+    summary="Get match details by ID",
+)
+def get_match_detail(
+    id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieves specific match details, verifying authorization."""
+    service = MatchService(db)
+    return service.get_match_by_id(id, current_user)
+
+
+@router.patch(
+    "/{id}/status",
+    response_model=MatchResponse,
+    summary="Update match status (e.g. Relevant, Dismissed, Resolved)",
+)
+def update_match_status(
+    id: uuid.UUID,
+    status_in: MatchStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Updates match status enforcing valid lifecycle transitions."""
+    service = MatchService(db)
+    return service.update_match_status(id, status_in.status, current_user)
 
 
 @router.post(
@@ -47,4 +108,3 @@ def get_report_matches(
     """Returns stored matches for the specified report."""
     service = MatchService(db)
     return service.get_matches_for_report(report_id)
-
