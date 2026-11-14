@@ -55,9 +55,17 @@ class ReportService:
         user_id: uuid.UUID,
         page: int = 1,
         size: int = 50,
+        report_type: Optional[str] = None,
+        status_filter: Optional[str] = None,
     ) -> Tuple[List[PetReport], int]:
         skip = (page - 1) * size
-        return self.repo.get_by_user(user_id=user_id, skip=skip, limit=size)
+        return self.repo.get_by_user(
+            user_id=user_id,
+            skip=skip,
+            limit=size,
+            report_type=report_type,
+            status_filter=status_filter,
+        )
 
     def update_report(
         self,

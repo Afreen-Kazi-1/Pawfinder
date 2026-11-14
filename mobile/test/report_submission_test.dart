@@ -43,7 +43,7 @@ class MockReportRepository implements ReportRepository {
   Future<PetReportModel> getReport(String id) async => throw UnimplementedError();
 
   @override
-  Future<List<PetReportModel>> getMyReports({int page = 1, int size = 50}) async => [];
+  Future<List<PetReportModel>> getMyReports({int page = 1, int size = 50, String? reportType, String? status}) async => [];
 
   @override
   Future<PetReportModel> updateReport({required String id, required Map<String, dynamic> updateData}) async =>

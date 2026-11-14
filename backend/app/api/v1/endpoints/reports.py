@@ -67,13 +67,21 @@ def list_reports(
     summary="Retrieve current user's submitted reports",
 )
 def get_my_reports(
+    report_type: Optional[str] = Query(None, description="LOST or FOUND"),
+    status: Optional[str] = Query(None, description="Open, Under Review, Reunited / Resolved, Closed"),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     service = ReportService(db)
-    items, total = service.get_user_reports(user_id=current_user.id, page=page, size=size)
+    items, total = service.get_user_reports(
+        user_id=current_user.id,
+        page=page,
+        size=size,
+        report_type=report_type,
+        status_filter=status,
+    )
     return PetReportListResponse(items=items, total=total, page=page, size=size)
 
 

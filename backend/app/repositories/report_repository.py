@@ -61,12 +61,29 @@ class ReportRepository:
         user_id: uuid.UUID,
         skip: int = 0,
         limit: int = 50,
+        report_type: Optional[str] = None,
+        status_filter: Optional[str] = None,
     ) -> Tuple[List[PetReport], int]:
         query = (
             self.db.query(PetReport)
             .options(joinedload(PetReport.images))
             .filter(PetReport.user_id == user_id)
         )
+        if report_type:
+            query = query.filter(PetReport.report_type == report_type.upper())
+        if status_filter:
+            # Canonical normalization
+            canonical_map = {
+                "OPEN": "Open",
+                "UNDER_REVIEW": "Under Review",
+                "UNDER REVIEW": "Under Review",
+                "RESOLVED": "Reunited / Resolved",
+                "REUNITED / RESOLVED": "Reunited / Resolved",
+                "CLOSED": "Closed",
+            }
+            norm_status = canonical_map.get(status_filter.strip().upper(), status_filter.strip().title())
+            query = query.filter(PetReport.status == norm_status)
+
         total = query.count()
         items = query.order_by(PetReport.created_at.desc()).offset(skip).limit(limit).all()
         return items, total

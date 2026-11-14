@@ -7,7 +7,7 @@ from app.schemas.image import PetImageResponse
 
 
 VALID_REPORT_TYPES = {"LOST", "FOUND"}
-VALID_STATUSES = {"Open", "Under Review", "Reunited / Resolved", "Closed"}
+VALID_STATUSES = {"Open", "Under Review", "Reunited / Resolved", "Closed", "RESOLVED", "CLOSED", "UNDER_REVIEW", "OPEN"}
 VALID_GENDERS = {"Male", "Female", "Unknown", None}
 
 
@@ -89,9 +89,20 @@ class PetReportStatusUpdate(BaseModel):
     @field_validator("status")
     @classmethod
     def validate_status(cls, v: str) -> str:
-        if v not in VALID_STATUSES:
-            raise ValueError(f"Invalid status '{v}'. Must be one of: {', '.join(VALID_STATUSES)}")
-        return v
+        # Normalize uppercase/variants
+        canonical_map = {
+            "OPEN": "Open",
+            "UNDER_REVIEW": "Under Review",
+            "UNDER REVIEW": "Under Review",
+            "RESOLVED": "Reunited / Resolved",
+            "REUNITED / RESOLVED": "Reunited / Resolved",
+            "CLOSED": "Closed",
+        }
+        val = canonical_map.get(v.strip().upper(), v.strip().title())
+        allowed = {"Open", "Under Review", "Reunited / Resolved", "Closed"}
+        if val not in allowed:
+            raise ValueError(f"Invalid status '{v}'. Must be one of: {', '.join(allowed)}")
+        return val
 
 
 class PetReportResponse(PetReportBase):
