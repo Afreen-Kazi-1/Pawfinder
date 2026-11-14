@@ -46,8 +46,10 @@ void main() {
   group('Logout Flow Tests', () {
     testWidgets('Triggers confirmation dialog and logs out on confirm', (WidgetTester tester) async {
     // Ensure the Sign Out button is within the visible viewport
-    tester.binding.window.physicalSizeTestValue = const Size(1080, 1920);
-    tester.binding.window.devicePixelRatioTestValue = 1.0;
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
       final mockRepo = MockLogoutAuthRepository();
 
       await tester.pumpWidget(

@@ -112,3 +112,40 @@ class PetReportListResponse(BaseModel):
     page: int
     size: int
 
+
+class PetReportPublicResponse(BaseModel):
+    """Public version of a pet report – hides exact coordinates.
+    Approximate coordinates are rounded to 3 decimal places (~100 m) to preserve privacy.
+    """
+    id: uuid.UUID
+    user_id: uuid.UUID
+    report_type: str
+    pet_name: Optional[str] = None
+    animal_type: str
+    breed: Optional[str] = None
+    color: str
+    gender: Optional[str] = None
+    approximate_age: Optional[str] = None
+    distinguishing_features: str = ""
+    description: str = ""
+    approx_latitude: float = Field(..., description="Rounded latitude for public display")
+    approx_longitude: float = Field(..., description="Rounded longitude for public display")
+    location_label: str
+    event_datetime: datetime
+    reward: Optional[Decimal] = None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    images: List[PetImageResponse] = []
+    distance_km: Optional[float] = None
+    user: Optional[UserSummaryResponse] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PetReportPublicListResponse(BaseModel):
+    items: List[PetReportPublicResponse]
+    total: int
+    page: int
+    size: int
+

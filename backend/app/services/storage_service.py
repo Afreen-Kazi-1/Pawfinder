@@ -61,8 +61,14 @@ class StorageService:
         unique_id = uuid.uuid4().hex
         storage_path = f"reports/{report_id}/{unique_id}{ext}"
 
-        # If Supabase credentials are configured, upload to Supabase Storage
-        if self.supabase_url and self.service_role_key:
+        # If Supabase credentials are configured and not dummy/placeholder, upload to Supabase Storage
+        has_real_supabase = (
+            bool(self.supabase_url)
+            and bool(self.service_role_key)
+            and "your-project" not in self.supabase_url
+            and "your-supabase" not in self.service_role_key
+        )
+        if has_real_supabase:
             try:
                 upload_url = f"{self.supabase_url}/storage/v1/object/{self.bucket_name}/{storage_path}"
                 headers = {
@@ -96,7 +102,13 @@ class StorageService:
 
     def delete_image(self, storage_path: str) -> bool:
         """Deletes image from Supabase Storage or local fallback directory."""
-        if self.supabase_url and self.service_role_key:
+        has_real_supabase = (
+            bool(self.supabase_url)
+            and bool(self.service_role_key)
+            and "your-project" not in self.supabase_url
+            and "your-supabase" not in self.service_role_key
+        )
+        if has_real_supabase:
             try:
                 delete_url = f"{self.supabase_url}/storage/v1/object/{self.bucket_name}/{storage_path}"
                 headers = {"Authorization": f"Bearer {self.service_role_key}"}
