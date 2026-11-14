@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from app.models.pet_report import PetReport
 from app.models.match import Match
 from app.models.user import User
+from app.models.notification import Notification
 from app.services.matching_engine import MatchingEngine
 
 # Permitted state transitions for the Match lifecycle
@@ -85,7 +86,34 @@ class MatchService:
                         status="Suggested",
                     )
                     self.db.add(new_match)
+                    self.db.flush()  # assign new_match.id
                     persisted_matches.append(new_match)
+
+                    # Create match identified notifications for owners of both reports
+                    pet_lost = lost_rep.pet_name or lost_rep.animal_type
+                    pet_found = found_rep.pet_name or found_rep.animal_type
+                    
+                    if lost_rep.user_id:
+                        notif_lost = Notification(
+                            user_id=lost_rep.user_id,
+                            title="Potential Match Identified!",
+                            message=f"A {eval_res['match_category'].lower()} potential match ({eval_res['match_score']}%) was found for your report '{pet_lost}'.",
+                            notification_type="match",
+                            related_entity_id=new_match.id,
+                            is_read=False,
+                        )
+                        self.db.add(notif_lost)
+
+                    if found_rep.user_id and found_rep.user_id != lost_rep.user_id:
+                        notif_found = Notification(
+                            user_id=found_rep.user_id,
+                            title="Potential Match Identified!",
+                            message=f"A {eval_res['match_category'].lower()} potential match ({eval_res['match_score']}%) was found for your report '{pet_found}'.",
+                            notification_type="match",
+                            related_entity_id=new_match.id,
+                            is_read=False,
+                        )
+                        self.db.add(notif_found)
 
         self.db.commit()
         for m in persisted_matches:

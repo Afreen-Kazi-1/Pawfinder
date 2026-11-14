@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.pet_report import PetReport
 from app.models.pet_image import PetImage
 from app.models.user import User
+from app.models.notification import Notification
 from app.repositories.report_repository import ReportRepository
 from app.schemas.report import PetReportCreate, PetReportUpdate
 from app.services.storage_service import StorageService, storage_service
@@ -85,7 +86,31 @@ class ReportService:
     ) -> PetReport:
         report = self.get_report(report_id)
         self._check_ownership(report, current_user)
-        return self.repo.update_status(report, new_status)
+        updated_report = self.repo.update_status(report, new_status)
+
+        # Generate notification for report owner
+        pet_title = updated_report.pet_name or f"{updated_report.animal_type}"
+        is_resolved = new_status.lower() in ["resolved", "reunited / resolved"]
+        notif_type = "resolved" if is_resolved else "status_update"
+        notif_title = "Report Resolved!" if is_resolved else "Report Status Updated"
+        notif_msg = (
+            f"Your report for '{pet_title}' has been marked as resolved."
+            if is_resolved
+            else f"Your report for '{pet_title}' status was updated to '{new_status}'."
+        )
+
+        notif = Notification(
+            user_id=updated_report.user_id,
+            title=notif_title,
+            message=notif_msg,
+            notification_type=notif_type,
+            related_entity_id=updated_report.id,
+            is_read=False,
+        )
+        self.db.add(notif)
+        self.db.commit()
+
+        return updated_report
 
     def delete_report(
         self,
