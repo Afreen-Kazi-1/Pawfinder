@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pawfinder/features/moderation/models/abuse_report_model.dart';
 import 'package:pawfinder/features/moderation/widgets/report_abuse_dialog.dart';
 import 'package:pawfinder/features/moderation/screens/admin_moderation_screen.dart';
+import 'package:pawfinder/features/moderation/providers/moderation_provider.dart';
 
 void main() {
   group('AbuseReportModel JSON Deserialization', () {
@@ -72,8 +73,11 @@ void main() {
   group('AdminModerationScreen Widget Tests', () {
     testWidgets('Renders moderation queue header and chips', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            moderationProvider.overrideWith(() => FakeModerationNotifier()),
+          ],
+          child: const MaterialApp(
             home: AdminModerationScreen(),
           ),
         ),
@@ -85,5 +89,15 @@ void main() {
       expect(find.text('Under Review'), findsOneWidget);
     });
   });
+}
+
+class FakeModerationNotifier extends ModerationNotifier {
+  @override
+  ModerationState build() {
+    return const ModerationState();
+  }
+
+  @override
+  Future<void> loadReports() async {}
 }
 

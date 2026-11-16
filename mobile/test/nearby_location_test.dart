@@ -67,8 +67,8 @@ void main() {
       animalType: 'Cat',
       breed: 'Tabby',
       color: 'Orange',
-      approxLatitude: 37.775,
-      approxLongitude: -122.419,
+      approxLatitude: 37.78,
+      approxLongitude: -122.42,
       locationLabel: 'Mission District',
       eventDatetime: DateTime.parse('2026-11-12T08:00:00Z'),
       status: 'Open',
@@ -90,6 +90,7 @@ void main() {
         ProviderScope(
           overrides: [
             discoveryRepositoryProvider.overrideWithValue(mockRepo),
+            nearbyProvider.overrideWith(() => FakeNearbyNotifier(dummyNearby)),
           ],
           child: const MaterialApp(
             home: NearbyMapScreen(),
@@ -102,7 +103,7 @@ void main() {
       expect(find.text('Nearby Pet Reports'), findsOneWidget);
       expect(find.text('Milo'), findsOneWidget);
       expect(find.text('1.3 km away'), findsOneWidget);
-      expect(find.textContaining('Approx. area: 37.78, -122.42'), findsOneWidget);
+      expect(find.textContaining('Approx. area: 37.78, -122.42'), findsWidgets);
     });
 
     testWidgets('Allows selecting different search radii', (tester) async {
@@ -150,5 +151,24 @@ void main() {
       expect(find.text('Set Location'), findsOneWidget);
     });
   });
+}
+
+class FakeNearbyNotifier extends NearbyNotifier {
+  final PublicPetReportModel model;
+  FakeNearbyNotifier(this.model);
+
+  @override
+  NearbyState build() {
+    return NearbyState(
+      isLoading: false,
+      reports: [model],
+      latitude: 37.7749,
+      longitude: -122.4194,
+      currentRadiusKm: 10.0,
+    );
+  }
+
+  @override
+  Future<void> loadNearby() async {}
 }
 

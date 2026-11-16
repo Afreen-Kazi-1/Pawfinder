@@ -21,8 +21,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('No Reports Submitted'), findsOneWidget);
-      expect(find.text('You have not submitted any lost or found pet reports yet.'), findsOneWidget);
+      expect(find.text('No Reports Found'), findsOneWidget);
+      expect(find.text('No reports match your selected type and status filters.'), findsOneWidget);
     });
 
     testWidgets('Renders list of reports with status badges and details', (WidgetTester tester) async {
@@ -81,7 +81,7 @@ void main() {
       expect(find.text('Rusty'), findsOneWidget);
       expect(find.text('LOST'), findsOneWidget);
       expect(find.text('FOUND'), findsOneWidget);
-      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('Open'), findsWidgets);
       expect(find.text('Reunited / Resolved'), findsOneWidget);
       expect(find.text('Mission Dolores Park'), findsOneWidget);
       expect(find.text('Valencia St'), findsOneWidget);

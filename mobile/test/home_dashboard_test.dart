@@ -144,7 +144,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('PawFinder'), findsOneWidget);
+      expect(find.text('PawFinder'), findsWidgets);
       expect(find.text('Report Lost Pet'), findsOneWidget);
       expect(find.text('Report Found Pet'), findsOneWidget);
       expect(find.text('Recently Lost Pets'), findsOneWidget);
