@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
+from app.models.pet_report import PetReport
 from app.schemas.match import (
     MatchRunResponse,
     MatchResponse,
@@ -32,6 +33,21 @@ def list_user_matches(
     Includes original lost and found reports, match scores, and explainable reasons.
     """
     service = MatchService(db)
+    # Automatically compute matches for user's active reports
+    user_reports = (
+        db.query(PetReport)
+        .filter(
+            PetReport.user_id == current_user.id,
+            PetReport.status.notin_(["Closed", "Resolved", "Reunited / Resolved"]),
+        )
+        .all()
+    )
+    for rep in user_reports:
+        try:
+            service.run_matching_for_report(rep.id)
+        except Exception:
+            pass
+
     items, total = service.get_user_matches(
         current_user=current_user,
         status_filter=status,

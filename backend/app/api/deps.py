@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -9,15 +9,12 @@ from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.user import User
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/auth/login",
-    auto_error=False,
-)
+security = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
     db: Session = Depends(get_db),
-    token: Optional[str] = Depends(oauth2_scheme),
+    auth: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> User:
     """Dependency that authenticates the user via JWT Bearer access token."""
     credentials_exception = HTTPException(
@@ -25,9 +22,10 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    if not token:
+    if not auth or not auth.credentials:
         raise credentials_exception
 
+    token = auth.credentials
     payload = decode_token(token)
     if not payload:
         raise credentials_exception
@@ -73,12 +71,13 @@ def get_current_admin(
 
 def get_optional_current_user(
     db: Session = Depends(get_db),
-    token: Optional[str] = Depends(oauth2_scheme),
+    auth: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Optional[User]:
     """Dependency for public endpoints that may provide customized data when logged in."""
-    if not token:
+    if not auth or not auth.credentials:
         return None
 
+    token = auth.credentials
     payload = decode_token(token)
     if not payload or payload.get("type") != "access":
         return None

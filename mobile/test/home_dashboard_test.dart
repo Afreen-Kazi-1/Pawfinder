@@ -23,15 +23,29 @@ class MockDashboardAuthRepo implements AuthRepository {
   );
 
   @override
-  Future<UserModel> login({required String email, required String password}) async => _user;
+  Future<UserModel> login({
+    required String email,
+    required String password,
+  }) async => _user;
   @override
-  Future<UserModel> register({required String name, required String email, required String password}) async => _user;
+  Future<UserModel> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async => _user;
   @override
   Future<UserModel> getCurrentUser() async => _user;
   @override
-  Future<UserModel> updateProfile({String? name, String? phone, String? profileImageUrl}) async => _user;
+  Future<UserModel> updateProfile({
+    String? name,
+    String? phone,
+    String? profileImageUrl,
+  }) async => _user;
   @override
-  Future<void> changePassword({required String currentPassword, required String newPassword}) async {}
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {}
   @override
@@ -55,7 +69,12 @@ class MockDashboardDiscoveryRepo implements DiscoveryRepository {
     int page = 1,
     int size = 20,
   }) async {
-    return DiscoveryResult(items: returnReports, total: returnReports.length, page: 1, size: 20);
+    return DiscoveryResult(
+      items: returnReports,
+      total: returnReports.length,
+      page: 1,
+      size: 20,
+    );
   }
 
   @override
@@ -84,12 +103,20 @@ class MockDashboardDiscoveryRepo implements DiscoveryRepository {
 }
 
 class MockDashboardMatchRepo implements MatchRepository {
+  List<MatchModel> returnMatches = [];
+
   @override
-  Future<List<MatchModel>> getMyMatches({String? status, int page = 1, int size = 20}) async => [];
+  Future<List<MatchModel>> getMyMatches({
+    String? status,
+    int page = 1,
+    int size = 20,
+  }) async => returnMatches;
   @override
-  Future<MatchModel> getMatchDetail(String id) async => throw UnimplementedError();
+  Future<MatchModel> getMatchDetail(String id) async =>
+      throw UnimplementedError();
   @override
-  Future<MatchModel> updateMatchStatus(String id, String newStatus) async => throw UnimplementedError();
+  Future<MatchModel> updateMatchStatus(String id, String newStatus) async =>
+      throw UnimplementedError();
 }
 
 void main() {
@@ -116,6 +143,24 @@ void main() {
       distinguishingFeatures: 'Red collar',
       description: 'Friendly golden doodle',
     );
+    final dummyMatch = MatchModel(
+      id: 'dash-match-1',
+      lostReportId: dummyPet.id,
+      foundReportId: 'dash-found-1',
+      matchScore: 94,
+      matchCategory: 'High potential match',
+      matchReasons: const {},
+      status: 'Suggested',
+      createdAt: DateTime.parse('2026-11-12T11:00:00Z'),
+      updatedAt: DateTime.parse('2026-11-12T11:00:00Z'),
+      lostReport: dummyPet,
+      foundReport: dummyPet.copyWith(
+        id: 'dash-found-1',
+        userId: 'user-id-2',
+        reportType: 'FOUND',
+        locationLabel: 'Near Mission Dolores',
+      ),
+    );
 
     setUp(() {
       mockAuth = MockDashboardAuthRepo();
@@ -123,7 +168,9 @@ void main() {
       mockMatch = MockDashboardMatchRepo();
     });
 
-    testWidgets('Renders personalized greeting and quick report actions', (tester) async {
+    testWidgets('Renders personalized greeting and quick report actions', (
+      tester,
+    ) async {
       mockDisc.returnReports = [dummyPet];
 
       await tester.pumpWidget(
@@ -134,10 +181,7 @@ void main() {
             matchRepositoryProvider.overrideWithValue(mockMatch),
           ],
           child: MaterialApp(
-            home: HomeDashboardView(
-              onReportLost: () {},
-              onReportFound: () {},
-            ),
+            home: HomeDashboardView(onReportLost: () {}, onReportFound: () {}),
           ),
         ),
       );
@@ -151,6 +195,37 @@ void main() {
       expect(find.text('Recently Found Pets'), findsOneWidget);
       expect(find.text('Barnaby'), findsOneWidget);
     });
+
+    testWidgets(
+      'Renders the potential-match carousel without layout overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        mockMatch.returnMatches = [dummyMatch];
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              authRepositoryProvider.overrideWithValue(mockAuth),
+              discoveryRepositoryProvider.overrideWithValue(mockDisc),
+              matchRepositoryProvider.overrideWithValue(mockMatch),
+            ],
+            child: MaterialApp(
+              home: HomeDashboardView(
+                onReportLost: () {},
+                onReportFound: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Potential Matches For You'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
-

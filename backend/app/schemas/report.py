@@ -109,6 +109,7 @@ class PetReportResponse(PetReportBase):
     id: uuid.UUID
     user_id: uuid.UUID
     status: str
+    reward: Optional[float] = None
     created_at: datetime
     updated_at: datetime
     images: List[PetImageResponse] = []
@@ -143,7 +144,7 @@ class PetReportPublicResponse(BaseModel):
     approx_longitude: float = Field(..., description="Rounded longitude for public display")
     location_label: str
     event_datetime: datetime
-    reward: Optional[Decimal] = None
+    reward: Optional[float] = None
     status: str
     created_at: datetime
     updated_at: datetime

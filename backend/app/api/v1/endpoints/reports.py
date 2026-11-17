@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import Optional, List
 from fastapi import APIRouter, Depends, Query, status, UploadFile, File
@@ -14,7 +15,9 @@ from app.schemas.report import (
 )
 from app.schemas.image import PetImageResponse
 from app.services.report_service import ReportService
+from app.services.match_service import MatchService
 
+logger = logging.getLogger("pawfinder")
 router = APIRouter()
 
 
@@ -30,7 +33,13 @@ def create_report(
     current_user: User = Depends(get_current_user),
 ):
     service = ReportService(db)
-    return service.create_report(user_id=current_user.id, report_in=report_in)
+    report = service.create_report(user_id=current_user.id, report_in=report_in)
+    try:
+        match_service = MatchService(db)
+        match_service.run_matching_for_report(report.id)
+    except Exception as e:
+        logger.warning(f"Auto-matching error on report creation for report {report.id}: {e}")
+    return report
 
 
 @router.get(

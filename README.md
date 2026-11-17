@@ -85,6 +85,38 @@ cd ..
 - Alternative ReDoc UI: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 - Health check: [http://localhost:8000/health](http://localhost:8000/health)
 
+### Deploy the Backend and Database
+
+1. Create a Supabase project. In **Project Settings → Database**, copy the
+   connection string for the **Session pooler** and use it as `DATABASE_URL`.
+   Keep the password URL-encoded if it contains special characters.
+2. Run the backend migrations against that database:
+   ```powershell
+   Set-Location backend
+   $env:DATABASE_URL = "postgresql://..."
+   .\venv\Scripts\alembic.exe upgrade head
+   Set-Location ..
+   ```
+3. In **Supabase → Storage**, create a bucket named `pet-images` and make it
+   public so report images can be loaded by the mobile app. Copy the project URL
+   and the **service role** key from the project's API settings; keep the key
+   private and use it only as a Render environment variable.
+4. Connect this repository to Render and deploy the Blueprint in `render.yaml`.
+   Set the prompted `DATABASE_URL`, `JWT_SECRET_KEY`, `SUPABASE_URL`, and
+   `SUPABASE_SERVICE_ROLE_KEY` values in Render's environment settings. Generate
+   a unique, high-entropy `JWT_SECRET_KEY`; do not use the development default.
+   The Render start command runs Alembic migrations before starting FastAPI.
+5. After Render deploys, build the mobile app with the service's HTTPS URL:
+   ```bash
+   flutter build apk --dart-define=API_BASE_URL=https://YOUR-SERVICE.onrender.com/api
+   ```
+
+Use the Supabase database and Storage for deployed data and images. Render's
+local filesystem is ephemeral, so the development local-upload fallback is not
+suitable for persistent production images. Supabase project creation, database
+passwords, and service keys must be managed in your own accounts and must not be
+committed to this repository.
+
 ### Authentication Endpoints (`/api/auth`)
 | Method | Endpoint | Description | Auth Required |
 |:---|:---|:---|:---|
@@ -180,4 +212,3 @@ Pawfinder/
 ├── requirements.md           # Master software requirements specification
 └── README.md
 ```
-

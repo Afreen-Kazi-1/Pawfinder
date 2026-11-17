@@ -11,9 +11,15 @@ import 'package:pawfinder/features/reports/models/pet_report_model.dart';
 class MockMatchRepository implements MatchRepository {
   List<MatchModel> returnMatches = [];
   bool statusUpdated = false;
+  final List<String?> requestedStatuses = [];
 
   @override
-  Future<List<MatchModel>> getMyMatches({String? status, int page = 1, int size = 20}) async {
+  Future<List<MatchModel>> getMyMatches({
+    String? status,
+    int page = 1,
+    int size = 20,
+  }) async {
+    requestedStatuses.add(status);
     return returnMatches;
   }
 
@@ -80,7 +86,10 @@ void main() {
       matchCategory: 'High potential match',
       matchReasons: {
         'animal_type': {'score': 100.0, 'explanation': 'Exact match: Dog.'},
-        'breed': {'score': 100.0, 'explanation': 'Exact breed: Golden Retriever.'},
+        'breed': {
+          'score': 100.0,
+          'explanation': 'Exact breed: Golden Retriever.',
+        },
       },
       status: 'Suggested',
       createdAt: DateTime.parse('2026-11-10T13:00:00Z'),
@@ -98,12 +107,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            matchRepositoryProvider.overrideWithValue(mockRepo),
-          ],
-          child: const MaterialApp(
-            home: MatchesScreen(),
-          ),
+          overrides: [matchRepositoryProvider.overrideWithValue(mockRepo)],
+          child: const MaterialApp(home: MatchesScreen()),
         ),
       );
 
@@ -112,40 +117,35 @@ void main() {
       expect(find.text('No matches found'), findsOneWidget);
     });
 
-    testWidgets('Renders match card with score indicator and report summaries', (tester) async {
-      mockRepo.returnMatches = [dummyMatch];
+    testWidgets(
+      'Renders match card with score indicator and report summaries',
+      (tester) async {
+        mockRepo.returnMatches = [dummyMatch];
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            matchRepositoryProvider.overrideWithValue(mockRepo),
-          ],
-          child: const MaterialApp(
-            home: MatchesScreen(),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [matchRepositoryProvider.overrideWithValue(mockRepo)],
+            child: const MaterialApp(home: MatchesScreen()),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.byType(MatchCard), findsOneWidget);
-      expect(find.text('94% MATCH'), findsOneWidget);
-      expect(find.text('Rusty'), findsOneWidget);
-      expect(find.text('Mark Relevant'), findsOneWidget);
-      expect(find.text('Dismiss'), findsOneWidget);
-    });
+        expect(find.byType(MatchCard), findsOneWidget);
+        expect(find.text('94% MATCH'), findsOneWidget);
+        expect(find.text('Rusty'), findsOneWidget);
+        expect(find.text('Mark Relevant'), findsOneWidget);
+        expect(find.text('Dismiss'), findsOneWidget);
+      },
+    );
 
     testWidgets('Tapping Mark Relevant updates match state', (tester) async {
       mockRepo.returnMatches = [dummyMatch];
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            matchRepositoryProvider.overrideWithValue(mockRepo),
-          ],
-          child: const MaterialApp(
-            home: MatchesScreen(),
-          ),
+          overrides: [matchRepositoryProvider.overrideWithValue(mockRepo)],
+          child: const MaterialApp(home: MatchesScreen()),
         ),
       );
 
@@ -156,6 +156,37 @@ void main() {
 
       expect(mockRepo.statusUpdated, isTrue);
     });
+
+    testWidgets(
+      'Filters the loaded matches locally and keeps updated matches visible',
+      (tester) async {
+        mockRepo.returnMatches = [dummyMatch];
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [matchRepositoryProvider.overrideWithValue(mockRepo)],
+            child: const MaterialApp(home: MatchesScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Mark Relevant'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Relevant').first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(MatchCard), findsOneWidget);
+        expect(find.text('Rusty'), findsOneWidget);
+
+        await tester.tap(find.text('Dismiss'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Dismissed').first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(MatchCard), findsOneWidget);
+        expect(find.text('Rusty'), findsOneWidget);
+        expect(mockRepo.requestedStatuses, [null]);
+      },
+    );
   });
 }
-
